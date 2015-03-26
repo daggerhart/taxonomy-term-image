@@ -25,10 +25,13 @@
     /**
      * Open the media modal window
      * - http://mikejolley.com/2012/12/using-the-new-wordpress-3-5-media-uploader-in-plugins/
+     * - https://gist.github.com/pippinsplugins/29bebb740e09e395dc06
      *
      * @param event
      */
-    openModal: function(){
+    openModal: function( event ){
+      event.preventDefault();
+
       // If the media frame already exists, reopen it.
       if ( taxonomyTermImage.file_frame ) {
         taxonomyTermImage.file_frame.open();
