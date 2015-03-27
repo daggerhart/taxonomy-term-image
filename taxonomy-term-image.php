@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Taxonomy Term Image
-Plugin URI: http://daggerhart.com
+Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page.
 Author: daggerhart
 Version: 1.0
