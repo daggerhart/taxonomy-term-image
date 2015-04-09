@@ -7,9 +7,9 @@
 
     // modal settings
     settings: {
-      title: 'Upload or select images to Attach to this post',
+      title: tax_term_image_vars.modal_title,
       button: {
-        text: 'Attach'
+          text: tax_term_image_vars.modal_attach
       },
       multiple: false,  // Set to true to allow multiple files to be selected
       library: {
@@ -20,6 +20,11 @@
     init: function(){
       // delegate our click handler so that the image itself is clickable.  because that's cool
       $('body').on('click', '.taxonomy-term-image-attach', taxonomyTermImage.openModal );
+      
+      $('.taxonomy-term-image-remove').click( function(){
+          $('#taxonomy-term-image-container').html('');
+          $('#taxonomy-term-image-id').val('');
+      });
     },
 
     /**
