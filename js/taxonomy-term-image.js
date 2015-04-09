@@ -7,9 +7,9 @@
 
     // modal settings
     settings: {
-      title: tax_term_image_vars.modal_title,
+      title: taxonomyTermImageText.modalTitle,
       button: {
-          text: tax_term_image_vars.modal_attach
+          text: taxonomyTermImageText.modalButton
       },
       multiple: false,  // Set to true to allow multiple files to be selected
       library: {
@@ -17,10 +17,14 @@
       }
     },
 
+    /**
+     * Initialize script
+     */
     init: function(){
       // delegate our click handler so that the image itself is clickable.  because that's cool
       $('body').on('click', '.taxonomy-term-image-attach', taxonomyTermImage.openModal );
-      
+
+      // remove button
       $('.taxonomy-term-image-remove').click( function(){
           $('#taxonomy-term-image-container').html('');
           $('#taxonomy-term-image-id').val('');

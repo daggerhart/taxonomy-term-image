@@ -4,13 +4,14 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page.
 Author: daggerhart
-Version: 1.0
+Version: 1.1
 Author URI: http://daggerhart.com
+TextDomain: yourdomain
 */
 
 class Taxonomy_Term_Image {
 
-    private $version = '1.0';
+    private $version = '1.1';
 
     // the taxonomy we are targeting
     private $taxonomy = 'category';
@@ -34,7 +35,6 @@ class Taxonomy_Term_Image {
         $this->term_images = get_option( $this->option_name, $this->term_images );
 
         // Only fire the hooks if we are in the admin
-
         if ( is_admin() ) {
 
             // hook into wordpress admin
@@ -43,8 +43,8 @@ class Taxonomy_Term_Image {
             add_action( $this->taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
             add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
 
-            add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ) );
-            add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ) );
+            add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+            add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
         }
     }
 
@@ -62,15 +62,17 @@ class Taxonomy_Term_Image {
             wp_enqueue_style( 'thickbox' );
             $dependencies = array( 'jquery', 'thickbox', 'media-upload' );
 
-            // our custom script
+            // register our custom script
             wp_register_script( 'taxonomy-term-image-js', $this->plugin_url . '/js/taxonomy-term-image.js', $dependencies, $this->version, true );
 
-            // Localize the modal window title
+            // Localize the modal window text so that we can translate it
             $translation_array = array(
-                'modal_title' => __( 'Select or upload an image for this term', 'yourdomain' ),
-                'modal_attach' => __( 'Attach', 'yourdomain' )
+                'modalTitle' => __( 'Select or upload an image for this term', 'yourdomain' ),
+                'modalButton' => __( 'Attach', 'yourdomain' )
             );
-            wp_localize_script( 'taxonomy-term-image-js', 'tax_term_image_vars', $translation_array );
+            wp_localize_script( 'taxonomy-term-image-js', 'taxonomyTermImageText', $translation_array );
+
+            // enqueue the registered and localized script
             wp_enqueue_script( 'taxonomy-term-image-js' );
         }
     }
@@ -82,7 +84,7 @@ class Taxonomy_Term_Image {
      * @param  array  $image_src 
      * @return string the html output for the image form
      */
-    function taxonomy_term_form_html( $image_ID = '', $image_src = array() ) {
+    function taxonomy_term_form_html( $image_ID = null, $image_src = array() ) {
         ?>
             <input type="button" class="taxonomy-term-image-attach button" value="<?php _e( 'Select Image', 'yourdomain' ); ?>" />
             <input type="button" class="taxonomy-term-image-remove button" value="<?php _e( 'Remove', 'yourdomain' ); ?>" />
@@ -101,7 +103,6 @@ class Taxonomy_Term_Image {
      * Add a new form field for the add taxonomy term form
      */
     function taxonomy_add_form(){
-
         ?>
             <div class="form-field term-image-wrap">
                 <label><?php _e( 'Taxonomy Term Image', 'yourdomain' ); ?></label>
@@ -117,7 +118,6 @@ class Taxonomy_Term_Image {
      * @param $tag | object | the term object
      */
     function taxonomy_edit_form( $tag ){
-        
         // default values
         $image_ID = '';
         $image_src = array();
@@ -126,8 +126,7 @@ class Taxonomy_Term_Image {
         if ( isset( $this->term_images[ $tag->term_id ] ) ) {
             $image_ID  = $this->term_images[ $tag->term_id ];
             $image_src =  wp_get_attachment_image_src( $image_ID, 'thumbnail' );
-        } 
-
+        }
         ?>
             <tr class="form-field">
                 <th scope="row" valign="top"><label><?php _e( 'Taxonomy Term Image', 'yourdomain' ); ?></label></th>
@@ -143,16 +142,17 @@ class Taxonomy_Term_Image {
      * Handle saving our custom taxonomy data
      *
      * @param $term_id
+     * @param $tt_id
+     * @param $taxonomy
      */
-    function taxonomy_term_form_save( $term_id, $tt_id = '', $taxonomy = '' ) {
-
+    function taxonomy_term_form_save( $term_id, $tt_id, $taxonomy ) {
+        // only save values if the form was submitted
         if ( $_POST['taxonomy'] == $this->taxonomy && isset( $_POST['taxonomy_term_image'] ) ) {
-            // we only care about this term, look for it specifically
             if ( ! empty( $_POST['taxonomy_term_image'] ) ) {
                 // set the image in the term_data array, and sanitize it
                 $this->term_images[ $term_id ] = absint( $_POST['taxonomy_term_image'] );
-
-            } else {
+            }
+            else {
                 unset( $this->term_images[ $term_id ] );
             }
 
@@ -161,3 +161,5 @@ class Taxonomy_Term_Image {
         }
     }
 }
+
+new Taxonomy_Term_Image();
