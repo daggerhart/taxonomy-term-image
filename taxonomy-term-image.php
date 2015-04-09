@@ -4,14 +4,14 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page.
 Author: daggerhart
-Version: 1.1
+Version: 1.2
 Author URI: http://daggerhart.com
 TextDomain: yourdomain
 */
 
 class Taxonomy_Term_Image {
 
-    private $version = '1.1';
+    private $version = '1.2';
 
     // the taxonomy we are targeting
     private $taxonomy = 'category';
@@ -45,6 +45,7 @@ class Taxonomy_Term_Image {
 
             add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
             add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+            add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
         }
     }
 
@@ -155,6 +156,23 @@ class Taxonomy_Term_Image {
             else {
                 unset( $this->term_images[ $term_id ] );
             }
+
+            // save the data
+            update_option( $this->option_name, $this->term_images );
+        }
+    }
+
+    /**
+     * Delete a term's image data when the term is deleted
+     *
+     * @param $term_id
+     * @param $tt_id
+     * @param $taxonomy
+     * @param $deleted_term
+     */
+    function delete_term( $term_id, $tt_id, $taxonomy, $deleted_term ) {
+        if ( $taxonomy == $this->taxonomy && isset( $this->term_images[ $term_id ] ) ) {
+            unset( $this->term_images[ $term_id ]  );
 
             // save the data
             update_option( $this->option_name, $this->term_images );
