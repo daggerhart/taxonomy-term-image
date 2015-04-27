@@ -9,6 +9,10 @@ Author URI: http://daggerhart.com
 TextDomain: yourdomain
 */
 
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
+
 class Taxonomy_Term_Image {
 
 	private $version = '1.3';
@@ -26,9 +30,22 @@ class Taxonomy_Term_Image {
 	private $term_images = array();
 
 	/**
+	 * Simple singleton to enforce once instance
+	 *
+	 * @return Taxonomy_Term_Image object
+	 */
+	static function instance() {
+		static $object = null;
+		if ( is_null( $object ) ) {
+			$object = new Taxonomy_Term_Image();
+		}
+		return $object;
+	}
+
+	/**
 	 * Init the plugin and hook into WordPress
 	 */
-	function __construct() {
+	private function __construct() {
 		// get our plugin location for enqueing scripts and styles
 		$this->plugin_url = plugin_dir_url( __FILE__ );
 
@@ -48,6 +65,12 @@ class Taxonomy_Term_Image {
 			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
 		}
 	}
+
+	// prevent cloning
+	private function __clone(){}
+
+	// prevent unserialization
+	private function __wakeup(){}
 
 	/**
 	 * WordPress action "admin_enqueue_scripts"
@@ -195,4 +218,7 @@ class Taxonomy_Term_Image {
 	}
 }
 
-new Taxonomy_Term_Image();
+endif;
+
+
+Taxonomy_Term_Image::instance();
