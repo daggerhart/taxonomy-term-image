@@ -4,14 +4,14 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page.
 Author: daggerhart
-Version: 1.2
+Version: 1.3
 Author URI: http://daggerhart.com
 TextDomain: yourdomain
 */
 
 class Taxonomy_Term_Image {
 
-    private $version = '1.2';
+    private $version = '1.3';
 
     // the taxonomy we are targeting
     private $taxonomy = 'category';
@@ -71,7 +71,7 @@ class Taxonomy_Term_Image {
                 'modalTitle' => __( 'Select or upload an image for this term', 'yourdomain' ),
                 'modalButton' => __( 'Attach', 'yourdomain' )
             );
-            wp_localize_script( 'taxonomy-term-image-js', 'taxonomyTermImageText', $translation_array );
+            wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $translation_array );
 
             // enqueue the registered and localized script
             wp_enqueue_script( 'taxonomy-term-image-js' );
@@ -86,7 +86,8 @@ class Taxonomy_Term_Image {
      * @return string the html output for the image form
      */
     function taxonomy_term_form_html( $image_ID = null, $image_src = array() ) {
-        ?>
+        wp_nonce_field('taxonomy-term-image-form-save', 'taxonomy-term-image-save-form-nonce');
+	    ?>
             <input type="button" class="taxonomy-term-image-attach button" value="<?php _e( 'Select Image', 'yourdomain' ); ?>" />
             <input type="button" class="taxonomy-term-image-remove button" value="<?php _e( 'Remove', 'yourdomain' ); ?>" />
             <input type="hidden" id="taxonomy-term-image-id" name="taxonomy_term_image" value="<?php print absint( $image_ID ); ?>" />
@@ -147,19 +148,33 @@ class Taxonomy_Term_Image {
      * @param $taxonomy
      */
     function taxonomy_term_form_save( $term_id, $tt_id, $taxonomy ) {
-        // only save values if the form was submitted
-        if ( $_POST['taxonomy'] == $this->taxonomy && isset( $_POST['taxonomy_term_image'] ) ) {
-            if ( ! empty( $_POST['taxonomy_term_image'] ) ) {
-                // set the image in the term_data array, and sanitize it
-                $this->term_images[ $term_id ] = absint( $_POST['taxonomy_term_image'] );
-            }
-            else {
-                unset( $this->term_images[ $term_id ] );
-            }
 
-            // save the data
-            update_option( $this->option_name, $this->term_images );
-        }
+	    // our requirements for saving:
+	    if (
+		     //  - nonce was submitted and is verified
+		     isset( $_POST['taxonomy-term-image-save-form-nonce'] ) &&
+		     wp_verify_nonce( $_POST['taxonomy-term-image-save-form-nonce'], 'taxonomy-term-image-form-save' ) &&
+
+		     //  - taxonomy data and taxonomy_term_image data was submitted
+		     isset( $_POST['taxonomy'] ) &&
+	         isset( $_POST['taxonomy_term_image'] ) &&
+
+		     //  - the taxonomy submitted is the taxonomy is the one we are dealing with
+		     $_POST['taxonomy'] == $this->taxonomy
+	       )
+	    {
+		    if ( ! empty( $_POST['taxonomy_term_image'] ) ) {
+			    // set the image in the term_data array, and sanitize it
+			    $this->term_images[ $term_id ] = absint( $_POST['taxonomy_term_image'] );
+		    }
+		    else if ( isset( $this->term_images[ $term_id ] ) ) {
+			    // term was submitted with no image value,
+			    unset( $this->term_images[ $term_id ] );
+		    }
+
+		    // save the data
+		    update_option( $this->option_name, $this->term_images );
+	    }
     }
 
     /**

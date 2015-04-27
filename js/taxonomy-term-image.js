@@ -1,4 +1,5 @@
 (function($){
+  var taxonomyTermImageText = TaxonomyTermImageText || {};
 
   var taxonomyTermImage = {
 
@@ -7,9 +8,9 @@
 
     // modal settings
     settings: {
-      title: taxonomyTermImageText.modalTitle,
+      title: taxonomyTermImageText.modalTitle || 'Select or upload a video',
       button: {
-          text: taxonomyTermImageText.modalButton
+          text: taxonomyTermImageText.modalButton || 'Attach'
       },
       multiple: false,  // Set to true to allow multiple files to be selected
       library: {
@@ -22,7 +23,7 @@
      */
     init: function(){
       // delegate our click handler so that the image itself is clickable.  because that's cool
-      $('body').on('click', '.taxonomy-term-image-attach', taxonomyTermImage.openModal );
+      $('body').on('click', '.taxonomy-term-image-attach', this.openModal );
 
       // remove button
       $('.taxonomy-term-image-remove').click( function(){
