@@ -15,24 +15,27 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 
 class Taxonomy_Term_Image {
 
+	// object version used for enqueuing scripts
 	private $version = '1.3';
-
-	// config: the slug for the taxonomy we are targeting
-	private $taxonomy = 'category';
-
-	// config: defined during __construct() for i18n reasons
-	private $labels = array();
 
 	// location of our plugin as a url
 	private $plugin_url;
 
+	// the slug for the taxonomy we are targeting
+	// api: use filter 'taxonomy-term-image-taxonomy' to override
+	private $taxonomy = 'category';
+
+	// defined during __construct() for i18n reasons
+	// api: use filter 'taxonomy-term-image-labels' to override
+	private $labels = array();
+
 	// where we will store our term_data
-	// will dynamically be set to $this->taxonomy . '_term_images' if not set here
+	// will dynamically be set to $this->taxonomy . '_term_images' by default
+	// api: use filter 'taxonomy-term-image-option-name' to override
 	private $option_name = '';
 
 	// array of key value pairs:  term_id => image_id
 	private $term_images = array();
-
 
 	/**
 	 * Simple singleton to enforce once instance
@@ -51,7 +54,7 @@ class Taxonomy_Term_Image {
 	 * Init the plugin and hook into WordPress
 	 */
 	private function __construct() {
-
+		// default labels
 		$this->labels = array(
 			'fieldTitle'       => __( 'Taxonomy Term Image', 'yourdomain' ),
 			'fieldDescription' => __( 'Select which image should represent this term.', 'yourdomain' ),
@@ -61,28 +64,29 @@ class Taxonomy_Term_Image {
 			'modalButton'      => __( 'Attach', 'yourdomain' ),
 		);
 
-		// set our option name keyed to the taxonomy
-		if ( $this->option_name === '' ) {
-			$this->option_name = $this->taxonomy . '_term_images';
-		}
+		// default option name keyed to the taxonomy
+		$this->option_name = $this->taxonomy . '_term_images';
+
+		// allow overriding of the target taxonomy
+		$this->taxonomy = apply_filters( 'taxonomy-term-image-taxonomy', $this->taxonomy );
+
+		// allow overriding of the html text
+		$this->labels = apply_filters( 'taxonomy-term-image-labels', $this->labels );
+
+		// allow overriding of option_name
+		$this->option_name = apply_filters( 'taxonomy-term-image-option-name', $this->option_name );
 
 		// get our plugin location for enqueing scripts and styles
 		$this->plugin_url = plugin_dir_url( __FILE__ );
 
+		// gather data
 		$this->term_images = get_option( $this->option_name, $this->term_images );
+
+		// hook into wordpress
 
 		// Only fire the hooks if we are in the admin
 		if ( is_admin() ) {
-
-			// hook into wordpress admin
-			add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
-
-			add_action( $this->taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
-			add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
-
-			add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
-			add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
-			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
+			$this->hook_up();
 		}
 	}
 
@@ -91,6 +95,21 @@ class Taxonomy_Term_Image {
 
 	// prevent unserialization
 	private function __wakeup(){}
+
+	/**
+	 * Initialize the object
+	 * - hook into WordPress admin
+	 */
+	private function hook_up(){
+		add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
+
+		add_action( $this->taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
+		add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
+
+		add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+		add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+		add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
+	}
 
 	/**
 	 * WordPress action "admin_enqueue_scripts"
