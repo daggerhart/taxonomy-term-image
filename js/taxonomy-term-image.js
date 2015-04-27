@@ -22,47 +22,56 @@
      * Initialize script
      */
     init: function(){
+      var _this = this;
+      
       // delegate our click handler so that the image itself is clickable.  because that's cool
-      $('body').on('click', '.taxonomy-term-image-attach', this.openModal );
+      $('body').on('click', '.taxonomy-term-image-attach', function ( event ) {
+        event.preventDefault();
+        
+        _this.openModal();
+      });
 
       // remove button
-      $('.taxonomy-term-image-remove').click( function(){
-          $('#taxonomy-term-image-container').html('');
-          $('#taxonomy-term-image-id').val('');
-      });
+      $('.taxonomy-term-image-remove').click( _this.removeImage );
+    },
+
+    /**
+     * Remove the current image by emptying the container and field
+     */
+    removeImage: function(){
+      $('#taxonomy-term-image-container').html('');
+      $('#taxonomy-term-image-id').val('');
     },
 
     /**
      * Open the media modal window
      * - http://mikejolley.com/2012/12/using-the-new-wordpress-3-5-media-uploader-in-plugins/
      * - https://gist.github.com/pippinsplugins/29bebb740e09e395dc06
-     *
-     * @param event
      */
-    openModal: function( event ){
-      event.preventDefault();
+    openModal: function(){
+      var _this = this;
 
       // If the media frame already exists, reopen it.
-      if ( taxonomyTermImage.file_frame ) {
-        taxonomyTermImage.file_frame.open();
+      if ( _this.file_frame ) {
+        _this.file_frame.open();
         return;
       }
 
       // Create the media frame.
-      taxonomyTermImage.file_frame = wp.media.frames.file_frame = wp.media( taxonomyTermImage.settings );
+      _this.file_frame = wp.media.frames.file_frame = wp.media( _this.settings );
 
       // When an image is selected, run a callback.
-      taxonomyTermImage.file_frame.on( 'select', function() {
+      _this.file_frame.on( 'select', function() {
 
-        taxonomyTermImage.file_frame.state()
+        _this.file_frame.state()
           .get('selection')
 
           // handle each attachment
-          .map( taxonomyTermImage.updateImage);
+          .map( _this.updateImage);
       });
 
       // Finally, open the modal
-      taxonomyTermImage.file_frame.open();
+      _this.file_frame.open();
     },
 
     /**
@@ -83,7 +92,6 @@
       //sizes.thumbnail.url
       $('#taxonomy-term-image-container').html("<img class='taxonomy-term-image-attach' src='" + sizes.thumbnail.url + "' />");
     }
-
   };
 
   $(document).ready(function(){
