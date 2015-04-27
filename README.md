@@ -2,15 +2,15 @@
 
 An example plugin for adding an image upload field to taxonomy term edit pages in WordPress.
 
-### How to use within a theme or plugin
+### How to use within a theme or plugin:
 
-** Setup file **
+**Setup file:**
 
 1. Delete plugin meta data at the top of taxonomy-term-image.php
 1. Find 'yourdomain' and replace with the text domain of your plugin or theme
 1. include_once taxonomy-term-image.php
 
-** filter 'taxonomy-term-image-taxonomy' **
+**filter 'taxonomy-term-image-taxonomy'**:
 
     function my_taxonomy_term_image_taxonomy( $taxonomy ) {
         // use for tags instead of categories
@@ -18,7 +18,7 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
     }
     add_filter( 'taxonomy-term-image-taxonomy', 'my_taxonomy_term_image_taxonomy' );
 
-** filter 'taxonomy-term-image-labels' **
+**filter 'taxonomy-term-image-labels'**:
 
     function my_taxonomy_term_image_labels( $labels ) {
         $labels['fieldTitle'] = __( 'My Super Rad Plugin', 'yourdomain' );
@@ -29,16 +29,16 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
     add_filter( 'taxonomy-term-image-labels', 'my_taxonomy_term_image_labels' );
 
 
-** filter 'taxonomy-term-image-taxonomy' **
+**filter 'taxonomy-term-image-taxonomy'**:
 
     function my_taxonomy_term_image_option_name( $option_name ) {
         // store in wp_options where option_name = 'my_super_rad_plugin'
         return 'my_super_rad_plugin';
     }
-    add_filter( 'taxonomy-term-image-option_name', 'my_taxonomy_term_image_option_name' );
+    add_filter( 'taxonomy-term-image-option-name', 'my_taxonomy_term_image_option_name' );
 
 
-**References**:
+### References:
 
 * action [admin_init](http://codex.wordpress.org/Plugin_API/Action_Reference/admin_init)
 * action [admin_enqueue_scripts](http://codex.wordpress.org/Plugin_API/Action_Reference/admin_enqueue_scripts)
