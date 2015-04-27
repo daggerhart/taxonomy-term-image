@@ -17,14 +17,15 @@ class Taxonomy_Term_Image {
 
 	private $version = '1.3';
 
-	// the taxonomy we are targeting
+	// the slug for the taxonomy we are targeting
 	private $taxonomy = 'category';
 
 	// location of our plugin as a url
 	private $plugin_url;
 
 	// where we will store our term_data
-	private $option_name = 'catalog_term_images';
+	// will dynamically be set to $this->taxonomy . '_term_images' if not set here
+	private $option_name = '';
 
 	// array of key value pairs:  term_id => image_id
 	private $term_images = array();
@@ -46,6 +47,11 @@ class Taxonomy_Term_Image {
 	 * Init the plugin and hook into WordPress
 	 */
 	private function __construct() {
+		// set our option name keyed to the taxonomy
+		if ( $this->option_name === '' ) {
+			$this->option_name = $this->taxonomy . '_term_images';
+		}
+
 		// get our plugin location for enqueing scripts and styles
 		$this->plugin_url = plugin_dir_url( __FILE__ );
 
