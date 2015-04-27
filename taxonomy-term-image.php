@@ -17,8 +17,11 @@ class Taxonomy_Term_Image {
 
 	private $version = '1.3';
 
-	// the slug for the taxonomy we are targeting
+	// config: the slug for the taxonomy we are targeting
 	private $taxonomy = 'category';
+
+	// config: defined during __construct() for i18n reasons
+	private $labels = array();
 
 	// location of our plugin as a url
 	private $plugin_url;
@@ -29,6 +32,7 @@ class Taxonomy_Term_Image {
 
 	// array of key value pairs:  term_id => image_id
 	private $term_images = array();
+
 
 	/**
 	 * Simple singleton to enforce once instance
@@ -47,6 +51,16 @@ class Taxonomy_Term_Image {
 	 * Init the plugin and hook into WordPress
 	 */
 	private function __construct() {
+
+		$this->labels = array(
+			'fieldTitle'       => __( 'Taxonomy Term Image', 'yourdomain' ),
+			'fieldDescription' => __( 'Select which image should represent this term.', 'yourdomain' ),
+			'imageButton'      => __( 'Select Image', 'yourdomain' ),
+			'removeButton'     => __( 'Remove', 'yourdomain' ),
+			'modalTitle'       => __( 'Select or upload an image for this term', 'yourdomain' ),
+			'modalButton'      => __( 'Attach', 'yourdomain' ),
+		);
+
 		// set our option name keyed to the taxonomy
 		if ( $this->option_name === '' ) {
 			$this->option_name = $this->taxonomy . '_term_images';
@@ -96,11 +110,7 @@ class Taxonomy_Term_Image {
 			wp_register_script( 'taxonomy-term-image-js', $this->plugin_url . '/js/taxonomy-term-image.js', $dependencies, $this->version, true );
 
 			// Localize the modal window text so that we can translate it
-			$translation_array = array(
-				'modalTitle' => __( 'Select or upload an image for this term', 'yourdomain' ),
-				'modalButton' => __( 'Attach', 'yourdomain' )
-			);
-			wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $translation_array );
+			wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $this->labels );
 
 			// enqueue the registered and localized script
 			wp_enqueue_script( 'taxonomy-term-image-js' );
@@ -117,10 +127,10 @@ class Taxonomy_Term_Image {
 	function taxonomy_term_form_html( $image_ID = null, $image_src = array() ) {
 		wp_nonce_field('taxonomy-term-image-form-save', 'taxonomy-term-image-save-form-nonce');
 		?>
-		<input type="button" class="taxonomy-term-image-attach button" value="<?php _e( 'Select Image', 'yourdomain' ); ?>" />
-		<input type="button" class="taxonomy-term-image-remove button" value="<?php _e( 'Remove', 'yourdomain' ); ?>" />
+		<input type="button" class="taxonomy-term-image-attach button" value="<?php echo esc_attr( $this->labels['imageButton'] ); ?>" />
+		<input type="button" class="taxonomy-term-image-remove button" value="<?php echo esc_attr( $this->labels['removeButton'] ); ?>" />
 		<input type="hidden" id="taxonomy-term-image-id" name="taxonomy_term_image" value="<?php print absint( $image_ID ); ?>" />
-		<p class="description"><?php _e( 'Select which image should represent this term.', 'yourdomain' ); ?></p>
+		<p class="description"><?php echo $this->labels['fieldDescription']; ?></p>
 
 		<p id="taxonomy-term-image-container">
 			<?php if ( isset( $image_src[0] ) ) : ?>
@@ -136,7 +146,7 @@ class Taxonomy_Term_Image {
 	function taxonomy_add_form(){
 		?>
 		<div class="form-field term-image-wrap">
-			<label><?php _e( 'Taxonomy Term Image', 'yourdomain' ); ?></label>
+			<label><?php echo $this->labels['fieldTitle']; ?></label>
 			<?php $this->taxonomy_term_form_html(); ?>
 		</div>
 	<?php
@@ -160,7 +170,7 @@ class Taxonomy_Term_Image {
 		}
 		?>
 		<tr class="form-field">
-			<th scope="row" valign="top"><label><?php _e( 'Taxonomy Term Image', 'yourdomain' ); ?></label></th>
+			<th scope="row" valign="top"><label><?php echo $this->labels['fieldTitle']; ?></label></th>
 			<td class="taxonomy-term-image-row">
 				<?php $this->taxonomy_term_form_html( $image_ID, $image_src ); ?>
 			</td>
