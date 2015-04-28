@@ -7,10 +7,13 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
 **Setup file:**
 
 1. Delete plugin meta data at the top of taxonomy-term-image.php
-1. Find 'yourdomain' and replace with the text domain of your plugin or theme
 1. include_once taxonomy-term-image.php
 
+### Hooks
+
 **filter 'taxonomy-term-image-taxonomy'**:
+
+Change the taxonomy targeted by the plugin.
 
     function my_taxonomy_term_image_taxonomy( $taxonomy ) {
         // use for tags instead of categories
@@ -19,6 +22,8 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
     add_filter( 'taxonomy-term-image-taxonomy', 'my_taxonomy_term_image_taxonomy' );
 
 **filter 'taxonomy-term-image-labels'**:
+
+Change the field and button text.
 
     function my_taxonomy_term_image_labels( $labels ) {
         $labels['fieldTitle'] = __( 'My Super Rad Plugin', 'yourdomain' );
@@ -31,11 +36,32 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
 
 **filter 'taxonomy-term-image-taxonomy'**:
 
+Change where the data is saved in the options table.
+
     function my_taxonomy_term_image_option_name( $option_name ) {
         // store in wp_options where option_name = 'my_super_rad_plugin'
         return 'my_super_rad_plugin';
     }
     add_filter( 'taxonomy-term-image-option-name', 'my_taxonomy_term_image_option_name' );
+
+**filter 'taxonomy-term-image-js-dir-url'**:
+
+Change where the js file is located. (no trailing slash)
+
+    function my_taxonomy_term_image_js_dir_url( $option_name ) {
+        // change the js directory to a subdirectory of this hook
+        return plugin_dir_url( __FILE__ ) . '/js';
+    }
+    add_filter( 'taxonomy-term-image-js-dir-url', 'my_taxonomy_term_image_js_dir_url' );
+
+
+**show image on archive template**
+
+    $term = get_queried_object();
+                    
+    if ( $term->term_image ){
+        echo wp_get_attachment_image( $term->term_image, 'thumbnail' );
+    }
 
 
 ### References:

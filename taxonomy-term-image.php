@@ -4,9 +4,8 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page.
 Author: daggerhart
-Version: 1.4
+Version: 1.5
 Author URI: http://daggerhart.com
-TextDomain: yourdomain
 */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -16,10 +15,10 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 class Taxonomy_Term_Image {
 
 	// object version used for enqueuing scripts
-	private $version = '1.4';
+	private $version = '1.5';
 
-	// location of our plugin as a url
-	private $plugin_url;
+	// url for the directory where our js is located
+	private $js_dir_url;
 
 	// the slug for the taxonomy we are targeting
 	// api: use filter 'taxonomy-term-image-taxonomy' to override
@@ -35,7 +34,7 @@ class Taxonomy_Term_Image {
 	private $option_name = '';
 
 	// array of key value pairs:  term_id => image_id
-	private $term_images = array();
+	public $term_images = array();
 
 	/**
 	 * Simple singleton to enforce once instance
@@ -56,12 +55,12 @@ class Taxonomy_Term_Image {
 	private function __construct() {
 		// default labels
 		$this->labels = array(
-			'fieldTitle'       => __( 'Taxonomy Term Image', 'yourdomain' ),
-			'fieldDescription' => __( 'Select which image should represent this term.', 'yourdomain' ),
-			'imageButton'      => __( 'Select Image', 'yourdomain' ),
-			'removeButton'     => __( 'Remove', 'yourdomain' ),
-			'modalTitle'       => __( 'Select or upload an image for this term', 'yourdomain' ),
-			'modalButton'      => __( 'Attach', 'yourdomain' ),
+			'fieldTitle'       => __( 'Taxonomy Term Image' ),
+			'fieldDescription' => __( 'Select which image should represent this term.' ),
+			'imageButton'      => __( 'Select Image' ),
+			'removeButton'     => __( 'Remove' ),
+			'modalTitle'       => __( 'Select or upload an image for this term' ),
+			'modalButton'      => __( 'Attach' ),
 		);
 
 		// default option name keyed to the taxonomy
@@ -76,18 +75,14 @@ class Taxonomy_Term_Image {
 		// allow overriding of option_name
 		$this->option_name = apply_filters( 'taxonomy-term-image-option-name', $this->option_name );
 
-		// get our plugin location for enqueing scripts and styles
-		$this->plugin_url = plugin_dir_url( __FILE__ );
+		// get our js location for enqueing scripts
+		$this->js_dir_url = apply_filters( 'taxonomy-term-image-js-dir-url', plugin_dir_url( __FILE__ ) . '/js' );
 
 		// gather data
 		$this->term_images = get_option( $this->option_name, $this->term_images );
 
-		// hook into wordpress
-
-		// Only fire the hooks if we are in the admin
-		if ( is_admin() ) {
-			$this->hook_up();
-		}
+		// hook into WordPress
+		$this->hook_up();
 	}
 
 	// prevent cloning
@@ -101,14 +96,22 @@ class Taxonomy_Term_Image {
 	 * - hook into WordPress admin
 	 */
 	private function hook_up(){
-		add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
+		// we only need to add most hooks on the admin side
+		if ( is_admin() ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
 
-		add_action( $this->taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
-		add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
+			// add our image field to the taxonomy term forms
+			add_action( $this->taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
+			add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
 
-		add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
-		add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
-		add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
+			// hook into term administration actions
+			add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+			add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
+		}
+
+		// add our data when term is retrieved
+		add_action( 'get_term', array( $this, 'get_term' ), 10, 2 );
 	}
 
 	/**
@@ -126,7 +129,7 @@ class Taxonomy_Term_Image {
 			$dependencies = array( 'jquery', 'thickbox', 'media-upload' );
 
 			// register our custom script
-			wp_register_script( 'taxonomy-term-image-js', $this->plugin_url . '/js/taxonomy-term-image.js', $dependencies, $this->version, true );
+			wp_register_script( 'taxonomy-term-image-js', $this->js_dir_url . '/taxonomy-term-image.js', $dependencies, $this->version, true );
 
 			// Localize the modal window text so that we can translate it
 			wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $this->labels );
@@ -143,12 +146,12 @@ class Taxonomy_Term_Image {
 	 * @param  array  $image_src
 	 * @return string the html output for the image form
 	 */
-	function taxonomy_term_form_html( $image_ID = null, $image_src = array() ) {
+	function taxonomy_term_image_field( $image_ID = null, $image_src = array() ) {
 		wp_nonce_field('taxonomy-term-image-form-save', 'taxonomy-term-image-save-form-nonce');
 		?>
 		<input type="button" class="taxonomy-term-image-attach button" value="<?php echo esc_attr( $this->labels['imageButton'] ); ?>" />
 		<input type="button" class="taxonomy-term-image-remove button" value="<?php echo esc_attr( $this->labels['removeButton'] ); ?>" />
-		<input type="hidden" id="taxonomy-term-image-id" name="taxonomy_term_image" value="<?php print absint( $image_ID ); ?>" />
+		<input type="hidden" id="taxonomy-term-image-id" name="taxonomy_term_image" value="<?php echo esc_attr( $image_ID ); ?>" />
 		<p class="description"><?php echo $this->labels['fieldDescription']; ?></p>
 
 		<p id="taxonomy-term-image-container">
@@ -166,7 +169,7 @@ class Taxonomy_Term_Image {
 		?>
 		<div class="form-field term-image-wrap">
 			<label><?php echo $this->labels['fieldTitle']; ?></label>
-			<?php $this->taxonomy_term_form_html(); ?>
+			<?php $this->taxonomy_term_image_field(); ?>
 		</div>
 	<?php
 
@@ -185,13 +188,13 @@ class Taxonomy_Term_Image {
 		// look for existing data for this term
 		if ( isset( $this->term_images[ $tag->term_id ] ) ) {
 			$image_ID  = $this->term_images[ $tag->term_id ];
-			$image_src =  wp_get_attachment_image_src( $image_ID, 'thumbnail' );
+			$image_src = wp_get_attachment_image_src( $image_ID, 'thumbnail' );
 		}
 		?>
 		<tr class="form-field">
 			<th scope="row" valign="top"><label><?php echo $this->labels['fieldTitle']; ?></label></th>
 			<td class="taxonomy-term-image-row">
-				<?php $this->taxonomy_term_form_html( $image_ID, $image_src ); ?>
+				<?php $this->taxonomy_term_image_field( $image_ID, $image_src ); ?>
 			</td>
 		</tr>
 	<?php
@@ -209,28 +212,30 @@ class Taxonomy_Term_Image {
 
 		// our requirements for saving:
 		if (
-			//  - nonce was submitted and is verified
+			// nonce was submitted and is verified
 			isset( $_POST['taxonomy-term-image-save-form-nonce'] ) &&
 			wp_verify_nonce( $_POST['taxonomy-term-image-save-form-nonce'], 'taxonomy-term-image-form-save' ) &&
 
-			//  - taxonomy data and taxonomy_term_image data was submitted
+			// taxonomy data and taxonomy_term_image data was submitted
 			isset( $_POST['taxonomy'] ) &&
 			isset( $_POST['taxonomy_term_image'] ) &&
 
-			//  - the taxonomy submitted is the taxonomy we are dealing with
+			// the taxonomy submitted is the taxonomy we are dealing with
 			$_POST['taxonomy'] == $this->taxonomy
 		)
 		{
+			// see if image data was submitted:
+			// sanitize the data and save it in the term_images array
 			if ( ! empty( $_POST['taxonomy_term_image'] ) ) {
-				// set the image in the term_data array, and sanitize it
 				$this->term_images[ $term_id ] = absint( $_POST['taxonomy_term_image'] );
 			}
+			// term was submitted with no image value:
+			// if the term previous had image data, remove it
 			else if ( isset( $this->term_images[ $term_id ] ) ) {
-				// term was submitted with no image value,
 				unset( $this->term_images[ $term_id ] );
 			}
 
-			// save the data
+			// save the term image data
 			update_option( $this->option_name, $this->term_images );
 		}
 	}
@@ -250,6 +255,23 @@ class Taxonomy_Term_Image {
 			// save the data
 			update_option( $this->option_name, $this->term_images );
 		}
+	}
+
+	/**
+	 * Add the image data to any relevant get_term call
+	 *
+	 * @param $_term
+	 * @param $taxonomy
+	 *
+	 * @return mixed
+	 */
+	function get_term( $_term, $taxonomy ) {
+		// only modify term when dealing with this taxonomy
+		if ( $taxonomy == $this->taxonomy ) {
+			// default to null if not found
+			$_term->term_image = isset( $this->term_images[ $_term->term_id ] ) ? $this->term_images[ $_term->term_id ] : null;
+		}
+		return $_term;
 	}
 }
 
