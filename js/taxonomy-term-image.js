@@ -85,12 +85,13 @@
 
       // get image sizes data
       var sizes = attachment.get('sizes');
+      var size = ( typeof sizes.thumbnail === 'undefined' ) ? sizes.full : sizes.thumbnail;
 
       //image.id
       $('#taxonomy-term-image-id').val( image.id );
 
       //sizes.thumbnail.url
-      $('#taxonomy-term-image-container').html("<img class='taxonomy-term-image-attach' src='" + sizes.thumbnail.url + "' />");
+      $('#taxonomy-term-image-container').html("<img class='taxonomy-term-image-attach' src='" + size.url + "' />");
     }
   };
 
