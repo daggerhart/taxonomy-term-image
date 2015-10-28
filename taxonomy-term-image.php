@@ -4,7 +4,7 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page.
 Author: daggerhart
-Version: 1.5
+Version: 1.5.1
 Author URI: http://daggerhart.com
 */
 
@@ -15,7 +15,7 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 class Taxonomy_Term_Image {
 
 	// object version used for enqueuing scripts
-	private $version = '1.5';
+	private $version = '1.5.1';
 
 	// url for the directory where our js is located
 	private $js_dir_url;
@@ -112,6 +112,7 @@ class Taxonomy_Term_Image {
 
 		// add our data when term is retrieved
 		add_action( 'get_term', array( $this, 'get_term' ), 10, 2 );
+		add_action( 'get_terms', array( $this, 'get_terms' ), 10, 3 );
 	}
 
 	/**
@@ -272,6 +273,20 @@ class Taxonomy_Term_Image {
 			$_term->term_image = isset( $this->term_images[ $_term->term_id ] ) ? $this->term_images[ $_term->term_id ] : null;
 		}
 		return $_term;
+	}
+
+	/**
+	 * Add term_image data to objects when get_terms() is called
+	 * 
+	 * @param $terms
+	 * @param $taxonomies
+	 * @param $args
+	 */
+	function get_terms( $terms, $taxonomies, $args ){
+		foreach( $terms as $i => $term ){
+			$terms[$i] = $this->get_term( $term, $term->taxonomy );
+		}
+		return $terms;
 	}
 }
 
