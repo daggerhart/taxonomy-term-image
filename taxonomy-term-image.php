@@ -28,10 +28,10 @@ class Taxonomy_Term_Image {
 	// api: use filter 'taxonomy-term-image-labels' to override
 	private $labels = array();
 
-	// where we will store our term_data
+	// where we will store our term_meta
 	// will dynamically be set to $this->taxonomy . '_term_images' by default
-	// api: use filter 'taxonomy-term-image-option-name' to override
-	private $option_name = '';
+	// api: use filter 'taxonomy-term-image-meta-name' to override
+	private $term_meta = '';
 
 	// array of key value pairs:  term_id => image_id
 	public $term_images = array();
@@ -64,7 +64,7 @@ class Taxonomy_Term_Image {
 		);
 
 		// default option name keyed to the taxonomy
-		$this->option_name = $this->taxonomy . '_term_images';
+		$this->term_meta = $this->taxonomy . '_term_images';
 
 		// allow overriding of the target taxonomy
 		$this->taxonomy = apply_filters( 'taxonomy-term-image-taxonomy', $this->taxonomy );
@@ -72,14 +72,14 @@ class Taxonomy_Term_Image {
 		// allow overriding of the html text
 		$this->labels = apply_filters( 'taxonomy-term-image-labels', $this->labels );
 
-		// allow overriding of option_name
-		$this->option_name = apply_filters( 'taxonomy-term-image-option-name', $this->option_name );
+		// allow overriding of term_meta
+		$this->term_meta = apply_filters( 'taxonomy-term-image-meta-name', $this->term_meta );
 
 		// get our js location for enqueing scripts
 		$this->js_dir_url = apply_filters( 'taxonomy-term-image-js-dir-url', plugin_dir_url( __FILE__ ) . '/js' );
 
 		// gather data
-		$this->term_images = get_option( $this->option_name, $this->term_images );
+		$this->term_images = get_option( $this->term_meta, $this->term_images );
 
 		// hook into WordPress
 		$this->hook_up();
@@ -96,6 +96,9 @@ class Taxonomy_Term_Image {
 	 * - hook into WordPress admin
 	 */
 	private function hook_up(){
+
+		add_action( 'init', array( $this, 'register_term_meta' ) );
+
 		// we only need to add most hooks on the admin side
 		if ( is_admin() ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
@@ -109,6 +112,11 @@ class Taxonomy_Term_Image {
 			add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
 			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
 		}
+	}
+
+
+	function register_term_meta() {
+		register_meta( 'term', $this->term_meta );
 	}
 
 	/**
@@ -233,7 +241,7 @@ class Taxonomy_Term_Image {
 			}
 
 			// save the term image data
-			update_option( $this->option_name, $this->term_images );
+			update_option( $this->term_meta, $this->term_images );
 		}
 	}
 
@@ -250,7 +258,7 @@ class Taxonomy_Term_Image {
 			unset( $this->term_images[ $term_id ]  );
 
 			// save the data
-			update_option( $this->option_name, $this->term_images );
+			update_option( $this->term_meta, $this->term_images );
 		}
 	}
 
