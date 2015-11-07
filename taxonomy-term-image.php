@@ -33,9 +33,6 @@ class Taxonomy_Term_Image {
 	// api: use filter 'taxonomy-term-image-meta-name' to override
 	private $term_meta = '';
 
-	// array of key value pairs:  term_id => image_id
-	public $term_images = array();
-
 	/**
 	 * Simple singleton to enforce once instance
 	 *
@@ -78,9 +75,6 @@ class Taxonomy_Term_Image {
 		// get our js location for enqueing scripts
 		$this->js_dir_url = apply_filters( 'taxonomy-term-image-js-dir-url', plugin_dir_url( __FILE__ ) . '/js' );
 
-		// gather data
-		$this->term_images = get_option( $this->term_meta, $this->term_images );
-
 		// hook into WordPress
 		$this->hook_up();
 	}
@@ -108,15 +102,17 @@ class Taxonomy_Term_Image {
 			add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
 
 			// hook into term administration actions
-			add_action( 'created_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
-			add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
+			add_action( 'create_' . $this->taxonomy, array( $this, 'taxonomy_term_form_save' ) );
+			add_action( 'edit_' . $this->taxonomy, array( $this, 'taxonomy_term_form_save' ) );
 			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
 		}
 	}
 
-
+	/**
+	 * Register out term meta and sanitize as an integer
+	 */
 	function register_term_meta() {
-		register_meta( 'term', $this->term_meta );
+		register_meta( 'term', $this->term_meta, 'absint' );
 	}
 
 	/**
@@ -185,14 +181,16 @@ class Taxonomy_Term_Image {
 	 *
 	 * @param $tag | object | the term object
 	 */
-	function taxonomy_edit_form( $tag ){
+	function taxonomy_edit_form( $term ){
 		// default values
 		$image_ID = '';
 		$image_src = array();
 
+		$term_image_id = get_term_meta( $term->term_id, $this->term_meta, true );
+
 		// look for existing data for this term
-		if ( isset( $this->term_images[ $tag->term_id ] ) ) {
-			$image_ID  = $this->term_images[ $tag->term_id ];
+		if ( isset( $term_image_id ) ) {
+			$image_ID  = $term_image_id;
 			$image_src = wp_get_attachment_image_src( $image_ID, 'thumbnail' );
 		}
 		?>
@@ -213,7 +211,7 @@ class Taxonomy_Term_Image {
 	 * @param $tt_id
 	 * @param $taxonomy
 	 */
-	function taxonomy_term_form_save( $term_id, $tt_id, $taxonomy ) {
+	function taxonomy_term_form_save( $term_id ) {
 
 		// our requirements for saving:
 		if (
@@ -229,19 +227,21 @@ class Taxonomy_Term_Image {
 			$_POST['taxonomy'] == $this->taxonomy
 		)
 		{
+			// get the term_meta and assign it the old_image
+			$old_image = get_term_meta( $term_id, $this->term_meta, true );
 			// see if image data was submitted:
-			// sanitize the data and save it in the term_images array
-			if ( ! empty( $_POST['taxonomy_term_image'] ) ) {
-				$this->term_images[ $term_id ] = absint( $_POST['taxonomy_term_image'] );
+			// sanitize the data and save it as the new_image
+			$new_image = isset( $_POST['taxonomy_term_image'] ) ? absint( $_POST['taxonomy_term_image'] ) : '';
+
+			if ( $old_image && '' === $new_image ) {
+				delete_term_meta( $term_id, $this->term_meta );
 			}
-			// term was submitted with no image value:
-			// if the term previous had image data, remove it
-			else if ( isset( $this->term_images[ $term_id ] ) ) {
-				unset( $this->term_images[ $term_id ] );
+			// if the new image is not the same as the old update the term_meta
+			else if ( $old_image !== $new_image ) {
+				// save the term image data
+				update_term_meta( $term_id, $this->term_meta, $new_image );
 			}
 
-			// save the term image data
-			update_option( $this->term_meta, $this->term_images );
 		}
 	}
 
@@ -254,17 +254,17 @@ class Taxonomy_Term_Image {
 	 * @param $deleted_term
 	 */
 	function delete_term( $term_id, $tt_id, $taxonomy, $deleted_term ) {
-		if ( $taxonomy == $this->taxonomy && isset( $this->term_images[ $term_id ] ) ) {
-			unset( $this->term_images[ $term_id ]  );
 
-			// save the data
-			update_option( $this->term_meta, $this->term_images );
+		$term_image_id = get_term_meta( $term_id, $this->term_meta, true );
+		if ( $taxonomy == $this->taxonomy && isset( $term_image_id ) ) {
+
+			// delete the data
+			delete_term_meta( $term_id, $this->term_meta );
 		}
 	}
 
 }
 
 endif;
-
 
 Taxonomy_Term_Image::instance();
