@@ -109,10 +109,6 @@ class Taxonomy_Term_Image {
 			add_action( 'edited_term', array( $this, 'taxonomy_term_form_save' ), 10, 3 );
 			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
 		}
-
-		// add our data when term is retrieved
-		add_action( 'get_term', array( $this, 'get_term' ), 10, 2 );
-		add_action( 'get_terms', array( $this, 'get_terms' ), 10, 3 );
 	}
 
 	/**
@@ -258,36 +254,6 @@ class Taxonomy_Term_Image {
 		}
 	}
 
-	/**
-	 * Add the image data to any relevant get_term call
-	 *
-	 * @param $_term
-	 * @param $taxonomy
-	 *
-	 * @return mixed
-	 */
-	function get_term( $_term, $taxonomy ) {
-		// only modify term when dealing with this taxonomy
-		if ( $taxonomy == $this->taxonomy ) {
-			// default to null if not found
-			$_term->term_image = isset( $this->term_images[ $_term->term_id ] ) ? $this->term_images[ $_term->term_id ] : null;
-		}
-		return $_term;
-	}
-
-	/**
-	 * Add term_image data to objects when get_terms() is called
-	 * 
-	 * @param $terms
-	 * @param $taxonomies
-	 * @param $args
-	 */
-	function get_terms( $terms, $taxonomies, $args ){
-		foreach( $terms as $i => $term ){
-			$terms[$i] = $this->get_term( $term, $term->taxonomy );
-		}
-		return $terms;
-	}
 }
 
 endif;
