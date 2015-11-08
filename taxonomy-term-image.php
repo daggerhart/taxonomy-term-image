@@ -104,7 +104,6 @@ class Taxonomy_Term_Image {
 			// hook into term administration actions
 			add_action( 'create_' . $this->taxonomy, array( $this, 'taxonomy_term_form_save' ) );
 			add_action( 'edit_' . $this->taxonomy, array( $this, 'taxonomy_term_form_save' ) );
-			add_action( 'delete_term', array( $this, 'delete_term' ), 10, 4 );
 		}
 	}
 
@@ -242,24 +241,6 @@ class Taxonomy_Term_Image {
 				update_term_meta( $term_id, $this->term_meta, $new_image );
 			}
 
-		}
-	}
-
-	/**
-	 * Delete a term's image data when the term is deleted
-	 *
-	 * @param $term_id
-	 * @param $tt_id
-	 * @param $taxonomy
-	 * @param $deleted_term
-	 */
-	function delete_term( $term_id, $tt_id, $taxonomy, $deleted_term ) {
-
-		$term_image_id = get_term_meta( $term_id, $this->term_meta, true );
-		if ( $taxonomy == $this->taxonomy && isset( $term_image_id ) ) {
-
-			// delete the data
-			delete_term_meta( $term_id, $this->term_meta );
 		}
 	}
 
