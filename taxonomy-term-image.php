@@ -4,7 +4,7 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/stevenslack/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page using WordPress 4.4 taxonomy term meta data
 Author: daggerhart, slack
-Version: 1.6
+Version: 1.6.1
 Author URI: http://daggerhart.com, http://stevenslack.com
 */
 
@@ -15,7 +15,7 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 class Taxonomy_Term_Image {
 
 	// object version used for enqueuing scripts
-	private $version = '1.6';
+	private $version = '1.6.1';
 
 	// url for the directory where our js is located
 	private $js_dir_url;
@@ -28,10 +28,9 @@ class Taxonomy_Term_Image {
 	// api: use filter 'taxonomy-term-image-labels' to override
 	private $labels = array();
 
-	// where we will store our term_meta
-	// will dynamically be set to $this->taxonomy . '_term_images' by default
-	// api: use filter 'taxonomy-term-image-meta-name' to override
-	private $term_meta = '';
+	// our term meta key
+	// api: use filter 'taxonomy-term-image-meta-key' to override
+	private $term_meta_key = 'term_image';
 
 	/**
 	 * Simple singleton to enforce once instance
@@ -60,9 +59,6 @@ class Taxonomy_Term_Image {
 			'modalButton'      => __( 'Attach' ),
 		);
 
-		// default option name keyed to the taxonomy
-		$this->term_meta = $this->taxonomy . '_term_images';
-
 		// allow overriding of the target taxonomy
 		$this->taxonomy = apply_filters( 'taxonomy-term-image-taxonomy', $this->taxonomy );
 
@@ -70,7 +66,7 @@ class Taxonomy_Term_Image {
 		$this->labels = apply_filters( 'taxonomy-term-image-labels', $this->labels );
 
 		// allow overriding of term_meta
-		$this->term_meta = apply_filters( 'taxonomy-term-image-meta-name', $this->term_meta );
+		$this->term_meta_key = apply_filters( 'taxonomy-term-image-meta-key', $this->term_meta_key );
 
 		// get our js location for enqueing scripts
 		$this->js_dir_url = apply_filters( 'taxonomy-term-image-js-dir-url', plugin_dir_url( __FILE__ ) . '/js' );
@@ -108,10 +104,10 @@ class Taxonomy_Term_Image {
 	}
 
 	/**
-	 * Register out term meta and sanitize as an integer
+	 * Register our term meta and sanitize as an integer
 	 */
 	function register_term_meta() {
-		register_meta( 'term', $this->term_meta, 'absint' );
+		register_meta( 'term', $this->term_meta_key, 'absint' );
 	}
 
 	/**
@@ -171,8 +167,7 @@ class Taxonomy_Term_Image {
 			<label><?php echo $this->labels['fieldTitle']; ?></label>
 			<?php $this->taxonomy_term_image_field(); ?>
 		</div>
-	<?php
-
+		<?php
 	}
 
 	/**
@@ -185,7 +180,7 @@ class Taxonomy_Term_Image {
 		$image_ID = '';
 		$image_src = array();
 
-		$term_image_id = get_term_meta( $term->term_id, $this->term_meta, true );
+		$term_image_id = get_term_meta( $term->term_id, $this->term_meta_key, true );
 
 		// look for existing data for this term
 		if ( isset( $term_image_id ) ) {
@@ -204,10 +199,9 @@ class Taxonomy_Term_Image {
 	}
 
 	/**
-	 * Handle saving our custom taxonomy data
+	 * Handle saving our custom taxonomy term meta
 	 *
 	 * @param $term_id
-	 * @param $tt_id
 	 * @param $taxonomy
 	 */
 	function taxonomy_term_form_save( $term_id ) {
@@ -227,18 +221,18 @@ class Taxonomy_Term_Image {
 		)
 		{
 			// get the term_meta and assign it the old_image
-			$old_image = get_term_meta( $term_id, $this->term_meta, true );
+			$old_image = get_term_meta( $term_id, $this->term_meta_key, true );
 			// see if image data was submitted:
 			// sanitize the data and save it as the new_image
 			$new_image = isset( $_POST['taxonomy_term_image'] ) ? absint( $_POST['taxonomy_term_image'] ) : '';
 
 			if ( $old_image && '' === $new_image ) {
-				delete_term_meta( $term_id, $this->term_meta );
+				delete_term_meta( $term_id, $this->term_meta_key );
 			}
 			// if the new image is not the same as the old update the term_meta
 			else if ( $old_image !== $new_image ) {
 				// save the term image data
-				update_term_meta( $term_id, $this->term_meta, $new_image );
+				update_term_meta( $term_id, $this->term_meta_key, $new_image );
 			}
 
 		}
