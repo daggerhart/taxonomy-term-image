@@ -92,4 +92,10 @@ In order to retrieve our image we need to use the `get_term_meta` function new t
 * action [{$taxonomy}_edit_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_edit_form_fields/)
 * [Using Media Uploader in plugins](http://mikejolley.com/2012/12/using-the-new-wordpress-3-5-media-uploader-in-plugins/)
 
+###TODO's
+
+* Register taxonomy meta on plugin activation
+* Delete taxonomy meta on plugin deactivation
+* add support for backwards compatibility
+* add support for multiple taxonomies
 
