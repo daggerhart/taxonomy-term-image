@@ -1,6 +1,6 @@
 # Taxonomy Term Image
 
-An example plugin for adding an image upload field to taxonomy term edit pages in WordPress 4.4 using the new taxonomy term meta data.
+An example plugin for adding an image upload field to taxonomy term edit pages in WordPress 4.4 using the new taxonomy term meta data. This example IS NOT compatible with any version of WordPress lower than 4.4, it is meant to be used as an example only.
 
 ### How to use within a theme or plugin:
 
