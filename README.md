@@ -11,7 +11,7 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
 
 ### Hooks
 
-**filter 'taxonomy-term-image-taxonomy'**:
+**filter `taxonomy-term-image-taxonomy`**:
 
 Change the taxonomy targeted by the plugin. By default post categories are used. You can change this to tags if you'd like following the example below:
 ```php
@@ -22,7 +22,7 @@ Change the taxonomy targeted by the plugin. By default post categories are used.
 	add_filter( 'taxonomy-term-image-taxonomy', 'the_term_image_taxonomy' );
 ```
 
-**filter 'taxonomy-term-image-labels'**:
+**filter `taxonomy-term-image-labels`**:
 
 Change the field and button text.
 ```php
@@ -35,7 +35,7 @@ Change the field and button text.
 	add_filter( 'taxonomy-term-image-labels', 'the_taxonomy_term_image_labels' );
 ```
 
-**filter 'taxonomy-term-image-meta-key'**:
+**filter `taxonomy-term-image-meta-key`**:
 
 Change the meta key used to save the image ID in the term meta data
 ```php
@@ -46,7 +46,7 @@ Change the meta key used to save the image ID in the term meta data
 	add_filter( 'taxonomy-term-image-meta-key', 'the_taxonomy_term_image_meta_key' );
 ```
 
-**filter 'taxonomy-term-image-js-dir-url'**:
+**filter `taxonomy-term-image-js-dir-url`**:
 
 Change where the js file is located. (no trailing slash)
 ```php
