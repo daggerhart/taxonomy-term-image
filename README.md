@@ -102,20 +102,23 @@ In order to retrieve the term image on an archive page:
 
 **Code References:**
 
-* action [admin_init](http://codex.wordpress.org/Plugin_API/Action_Reference/admin_init)
-* action [admin_enqueue_scripts](http://codex.wordpress.org/Plugin_API/Action_Reference/admin_enqueue_scripts)
+* Plugin Hooks
+    * action [admin_init](http://codex.wordpress.org/Plugin_API/Action_Reference/admin_init)
+    * action [admin_enqueue_scripts](http://codex.wordpress.org/Plugin_API/Action_Reference/admin_enqueue_scripts)
 	* function [wp_register_script](https://developer.wordpress.org/reference/functions/wp_register_script/)
 	* function [wp_localize_script](https://developer.wordpress.org/reference/functions/wp_localize_script/)
 	* function [wp_enqueue_script](https://developer.wordpress.org/reference/functions/wp_enqueue_script/)
-* function [register_meta](https://developer.wordpress.org/reference/functions/register_meta/)
-* function [get_term_meta](https://make.wordpress.org/core/2015/10/23/4-4-taxonomy-roundup/)
-* function [update_term_meta](https://make.wordpress.org/core/2015/10/23/4-4-taxonomy-roundup/)
-* function [delete_term_meta](https://make.wordpress.org/core/2015/10/23/4-4-taxonomy-roundup/)
-* action [create_{$taxonomy}](https://developer.wordpress.org/reference/hooks/create_taxonomy/)
-* action [edit_{$taxonomy}](https://developer.wordpress.org/reference/hooks/edit_taxonomy/)
-* action [{$taxonomy}_add_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_add_form_fields/)
-* action [{$taxonomy}_edit_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_edit_form_fields/)
-* filter [get_term](https://developer.wordpress.org/reference/hooks/get_term/)
-* filter [get_terms](https://developer.wordpress.org/reference/hooks/get_terms/)
-* filter [get_object_terms](https://developer.wordpress.org/reference/hooks/get_object_terms/)
+* Term Meta Data
+    * function [register_meta](https://developer.wordpress.org/reference/functions/register_meta/)
+    * function [get_term_meta](https://make.wordpress.org/core/2015/10/23/4-4-taxonomy-roundup/)
+    * function [update_term_meta](https://make.wordpress.org/core/2015/10/23/4-4-taxonomy-roundup/)
+    * function [delete_term_meta](https://make.wordpress.org/core/2015/10/23/4-4-taxonomy-roundup/)
+* Taxonomy Hooks
+    * action [create_{$taxonomy}](https://developer.wordpress.org/reference/hooks/create_taxonomy/)
+    * action [edit_{$taxonomy}](https://developer.wordpress.org/reference/hooks/edit_taxonomy/)
+    * action [{$taxonomy}_add_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_add_form_fields/)
+    * action [{$taxonomy}_edit_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_edit_form_fields/)
+    * filter [get_term](https://developer.wordpress.org/reference/hooks/get_term/)
+    * filter [get_terms](https://developer.wordpress.org/reference/hooks/get_terms/)
+    * filter [get_object_terms](https://developer.wordpress.org/reference/hooks/get_object_terms/)
 
