@@ -13,7 +13,8 @@ An example plugin for adding an image upload field to taxonomy term edit pages i
 
 **filter `taxonomy-term-image-taxonomy`**:
 
-Change the taxonomy targeted by the plugin. By default post categories are used. You can change this to tags if you'd like following the example below:
+Change the taxonomy targeted by the plugin. By default, the `category` taxonomy is the only taxonomy targeted. You can change this to tags if you'd like following the example below:
+
 ```php
 	function the_term_image_taxonomy( $taxonomy ) {
 		// use for tags instead of categories
@@ -22,9 +23,20 @@ Change the taxonomy targeted by the plugin. By default post categories are used.
 	add_filter( 'taxonomy-term-image-taxonomy', 'the_term_image_taxonomy' );
 ```
 
+Alternatively, the plugin can target more than one taxonomy by providing it an array of taxonomy slugs:
+
+```php
+	function the_term_image_taxonomy( $taxonomy ) {
+		// use for tags and categories
+		return array( 'post_tag', 'category' );
+	}
+	add_filter( 'taxonomy-term-image-taxonomy', 'the_term_image_taxonomy' );
+```
+
 **filter `taxonomy-term-image-labels`**:
 
 Change the field and button text.
+
 ```php
 	function the_taxonomy_term_image_labels( $labels ) {
 		$labels['fieldTitle'] = __( 'My Super Rad Plugin', 'yourdomain' );
@@ -38,6 +50,7 @@ Change the field and button text.
 **filter `taxonomy-term-image-meta-key`**:
 
 Change the meta key used to save the image ID in the term meta data
+
 ```php
 	function the_taxonomy_term_image_meta_key( $option_name ) {
 		// store in term meta where term meta key is = 'my_term_meta_key'
@@ -49,6 +62,7 @@ Change the meta key used to save the image ID in the term meta data
 **filter `taxonomy-term-image-js-dir-url`**:
 
 Change where the js file is located. (no trailing slash)
+
 ```php
 	function my_taxonomy_term_image_js_dir_url( $option_name ) {
 		// change the js directory to a subdirectory of this hook
@@ -59,14 +73,24 @@ Change where the js file is located. (no trailing slash)
 
 **show image on archive template**
 
-In order to retrieve our image we need to use the `get_term_meta` function new to WordPress 4.4.
+Term Image IDs are automatically attached to terms that are passed through the `get_term` and `get_terms` filters as the `->term_image` property.
+
+```php
+	$term = get_term( 123, 'category' );
+
+	if ( $term->term_image ) {
+		echo wp_get_attachment_image( $term->term_image, 'full' );
+	}
+```
+
+In order to retrieve the term image on an archive page:
+
 ```php
 	$term = get_queried_object();
 
-	if ( $term->term_id ){
-		$term_image_id = get_term_meta( $term->term_id, 'term_image', true );
-		echo wp_get_attachment_image( $term_image_id, 'full' );
-	}
+	if ( $term->term_image ) {
+	    echo wp_get_attachment_image( $term->term_image, 'full' );
+    }
 ```
 
 ### References:
@@ -91,11 +115,6 @@ In order to retrieve our image we need to use the `get_term_meta` function new t
 * action [{$taxonomy}_add_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_add_form_fields/)
 * action [{$taxonomy}_edit_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_edit_form_fields/)
 * [Using Media Uploader in plugins](http://mikejolley.com/2012/12/using-the-new-wordpress-3-5-media-uploader-in-plugins/)
-
-###TODO's
-
-* Register taxonomy meta on plugin activation
-* Delete taxonomy meta on plugin deactivation
-* add support for backwards compatibility
-* add support for multiple taxonomies
+* filter [get_term](https://developer.wordpress.org/reference/hooks/get_term/)
+* filter [get_terms](https://developer.wordpress.org/reference/hooks/get_terms/)
 

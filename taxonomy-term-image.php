@@ -1,11 +1,10 @@
 <?php
 /*
 Plugin Name: Taxonomy Term Image
-Plugin URI: https://github.com/stevenslack/taxonomy-term-image
+Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page using WordPress 4.4 taxonomy term meta data
 Author: daggerhart, slack
-Version: 1.6.1
-Author URI: http://daggerhart.com, http://stevenslack.com
+Version: 2.0.0
 */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -15,18 +14,22 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 class Taxonomy_Term_Image {
 
 	// object version used for enqueuing scripts
-	private $version = '1.6.1';
+	private $version = '2.0.0';
 
 	// url for the directory where our js is located
 	private $js_dir_url;
 
-	// the slug for the taxonomy we are targeting
+	// array of slugs for the taxonomies we are targeting
 	// api: use filter 'taxonomy-term-image-taxonomy' to override
-	private $taxonomy = 'category';
+	private $taxonomies = array( 'category' );
 
 	// defined during __construct() for i18n reasons
 	// api: use filter 'taxonomy-term-image-labels' to override
 	private $labels = array();
+
+	// @deprecated: option_name for pre-term-meta data storage
+	// api: use filter 'taxonomy-term-image-option-name' to override
+	private $option_name = '';
 
 	// our term meta key
 	// api: use filter 'taxonomy-term-image-meta-key' to override
@@ -59,17 +62,29 @@ class Taxonomy_Term_Image {
 			'modalButton'      => __( 'Attach' ),
 		);
 
-		// allow overriding of the target taxonomy
-		$this->taxonomy = apply_filters( 'taxonomy-term-image-taxonomy', $this->taxonomy );
-
 		// allow overriding of the html text
 		$this->labels = apply_filters( 'taxonomy-term-image-labels', $this->labels );
+
+		// allow overriding of the target taxonomies
+		$this->taxonomies = apply_filters( 'taxonomy-term-image-taxonomy', $this->taxonomies );
+
+		if ( ! is_array( $this->taxonomies ) ) {
+			$this->taxonomies = array( $this->taxonomies );
+		}
+
+		// @deprecated: allow overriding of option_name
+		// default option name keyed to the taxonomy
+		$this->option_name = $this->taxonomies[0] . '_term_images';
+		$this->option_name = apply_filters( 'taxonomy-term-image-option-name', $this->option_name );
 
 		// allow overriding of term_meta
 		$this->term_meta_key = apply_filters( 'taxonomy-term-image-meta-key', $this->term_meta_key );
 
 		// get our js location for enqueing scripts
 		$this->js_dir_url = apply_filters( 'taxonomy-term-image-js-dir-url', plugin_dir_url( __FILE__ ) . '/js' );
+
+		// check for updates
+		$this->upgrade();
 
 		// hook into WordPress
 		$this->hook_up();
@@ -82,25 +97,52 @@ class Taxonomy_Term_Image {
 	private function __wakeup(){}
 
 	/**
+	 * Check for plugin updates
+	 */
+	private function upgrade(){
+		$previous_version = get_option( 'taxonomy-term-image-version', '0.0.0' );
+
+		// if the previous version is less than the current version,
+		// we need to upgrade
+		if ( version_compare( $previous_version, $this->version, '<' ) ){
+
+			$old_option = get_option( $this->option_name, array() );
+
+			foreach( $old_option as $term_id => $image_id ) {
+				update_term_meta( $term_id, $this->term_meta_key, $image_id );
+			}
+
+			// modify the stored version data for future checks
+			update_option( 'taxonomy-term-image-version', $this->version );
+		}
+	}
+
+	/**
 	 * Initialize the object
 	 * - hook into WordPress admin
 	 */
 	private function hook_up(){
-
+		// term meta data registration
 		add_action( 'init', array( $this, 'register_term_meta' ) );
 
 		// we only need to add most hooks on the admin side
 		if ( is_admin() ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
 
-			// add our image field to the taxonomy term forms
-			add_action( $this->taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
-			add_action( $this->taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
+			foreach ( $this->taxonomies as $taxonomy ) {
+				// add our image field to the taxonomy term forms
+				add_action( $taxonomy . '_add_form_fields', array( $this, 'taxonomy_add_form' ) );
+				add_action( $taxonomy . '_edit_form_fields', array( $this, 'taxonomy_edit_form' ) );
 
-			// hook into term administration actions
-			add_action( 'create_' . $this->taxonomy, array( $this, 'taxonomy_term_form_save' ) );
-			add_action( 'edit_' . $this->taxonomy, array( $this, 'taxonomy_term_form_save' ) );
+				// hook into term administration actions
+				add_action( 'create_' . $taxonomy, array( $this, 'taxonomy_term_form_save' ) );
+				add_action( 'edit_' . $taxonomy, array( $this, 'taxonomy_term_form_save' ) );
+			}
 		}
+
+		// add our data when term is retrieved
+		add_action( 'get_term', array( $this, 'get_term' ), 10, 2 );
+		add_action( 'get_terms', array( $this, 'get_terms' ), 10, 3 );
 	}
 
 	/**
@@ -117,21 +159,24 @@ class Taxonomy_Term_Image {
 		// get the screen object to decide if we want to inject our scripts
 		$screen = get_current_screen();
 
-		// we're looking for "edit-category"
-		if ( $screen->id == 'edit-' . $this->taxonomy ){
-			// WP core stuff we need
-			wp_enqueue_media();
-			wp_enqueue_style( 'thickbox' );
-			$dependencies = array( 'jquery', 'thickbox', 'media-upload' );
+		// check if we are on any edit-{taxonomy} screen
+		foreach( $this->taxonomies as $taxonomy ) {
+			if ( $screen->id == 'edit-' . $taxonomy ){
+				// WP core stuff we need
+				wp_enqueue_media();
+				wp_enqueue_style( 'thickbox' );
+				$dependencies = array( 'jquery', 'thickbox', 'media-upload' );
 
-			// register our custom script
-			wp_register_script( 'taxonomy-term-image-js', $this->js_dir_url . '/taxonomy-term-image.js', $dependencies, $this->version, true );
+				// register our custom script
+				wp_register_script( 'taxonomy-term-image-js', $this->js_dir_url . '/taxonomy-term-image.js', $dependencies, $this->version, true );
 
-			// Localize the modal window text so that we can translate it
-			wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $this->labels );
+				// Localize the modal window text so that we can translate it
+				wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $this->labels );
 
-			// enqueue the registered and localized script
-			wp_enqueue_script( 'taxonomy-term-image-js' );
+				// enqueue the registered and localized script
+				wp_enqueue_script( 'taxonomy-term-image-js' );
+				break;
+			}
 		}
 	}
 
@@ -155,7 +200,7 @@ class Taxonomy_Term_Image {
 				<img class="taxonomy-term-image-attach" src="<?php print esc_attr( $image_src[0] ); ?>" />
 			<?php endif; ?>
 		</p>
-	<?php
+		<?php
 	}
 
 	/**
@@ -173,7 +218,7 @@ class Taxonomy_Term_Image {
 	/**
 	 * Add a new form field for the edit taxonomy term form
 	 *
-	 * @param $tag | object | the term object
+	 * @param $term | object | the term object
 	 */
 	function taxonomy_edit_form( $term ){
 		// default values
@@ -194,15 +239,13 @@ class Taxonomy_Term_Image {
 				<?php $this->taxonomy_term_image_field( $image_ID, $image_src ); ?>
 			</td>
 		</tr>
-	<?php
-
+		<?php
 	}
 
 	/**
 	 * Handle saving our custom taxonomy term meta
 	 *
 	 * @param $term_id
-	 * @param $taxonomy
 	 */
 	function taxonomy_term_form_save( $term_id ) {
 
@@ -216,8 +259,8 @@ class Taxonomy_Term_Image {
 			isset( $_POST['taxonomy'] ) &&
 			isset( $_POST['taxonomy_term_image'] ) &&
 
-			// the taxonomy submitted is the taxonomy we are dealing with
-			$_POST['taxonomy'] == $this->taxonomy
+			// the taxonomy submitted is one of the taxonomies we are dealing with
+			in_array( $_POST['taxonomy'], $this->taxonomies )
 		)
 		{
 			// get the term_meta and assign it the old_image
@@ -234,10 +277,40 @@ class Taxonomy_Term_Image {
 				// save the term image data
 				update_term_meta( $term_id, $this->term_meta_key, $new_image );
 			}
-
 		}
 	}
 
+	/**
+	 * Add the image data to any relevant get_term call
+	 *
+	 * @param $_term
+	 * @param $taxonomy
+	 *
+	 * @return mixed
+	 */
+	function get_term( $_term, $taxonomy ) {
+		// only modify term when dealing with this taxonomy
+		if ( in_array( $taxonomy, $this->taxonomies ) ) {
+			// (backwards compatibility) default to null if not found
+			$image_id = get_term_meta( $_term->term_id, $this->term_meta_key, true );
+			$_term->term_image = !empty( $image_id ) ? $image_id : null;
+		}
+		return $_term;
+	}
+
+	/**
+	 * Add term_image data to objects when get_terms() is called
+	 *
+	 * @param $terms
+	 * @param $taxonomies
+	 * @param $args
+	 */
+	function get_terms( $terms, $taxonomies, $args ) {
+		foreach( $terms as $i => $term ){
+			$terms[$i] = $this->get_term( $term, $term->taxonomy );
+		}
+		return $terms;
+	}
 }
 
 endif;
