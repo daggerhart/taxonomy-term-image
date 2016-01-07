@@ -117,4 +117,5 @@ In order to retrieve the term image on an archive page:
 * action [{$taxonomy}_edit_form_fields](https://developer.wordpress.org/reference/hooks/taxonomy_edit_form_fields/)
 * filter [get_term](https://developer.wordpress.org/reference/hooks/get_term/)
 * filter [get_terms](https://developer.wordpress.org/reference/hooks/get_terms/)
+* filter [get_object_terms](https://developer.wordpress.org/reference/hooks/get_object_terms/)
 

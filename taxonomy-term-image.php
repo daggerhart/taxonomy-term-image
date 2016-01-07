@@ -4,7 +4,7 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page using WordPress 4.4 taxonomy term meta data
 Author: daggerhart, slack
-Version: 2.0.0
+Version: 2.0.1
 */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -14,7 +14,7 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 class Taxonomy_Term_Image {
 
 	// object version used for enqueuing scripts
-	private $version = '2.0.0';
+	private $version = '2.0.1';
 
 	// url for the directory where our js is located
 	private $js_dir_url;
@@ -108,8 +108,14 @@ class Taxonomy_Term_Image {
 
 			$old_option = get_option( $this->option_name, array() );
 
-			foreach( $old_option as $term_id => $image_id ) {
-				update_term_meta( $term_id, $this->term_meta_key, $image_id );
+			// if we have data in the old (1.x) option,
+			// move it to term meta and delete the old option
+			if ( ! empty( $old_option ) ) {
+				foreach( $old_option as $term_id => $image_id ) {
+					update_term_meta( $term_id, $this->term_meta_key, $image_id );
+				}
+
+				delete_option( $this->option_name );
 			}
 
 			// modify the stored version data for future checks
@@ -141,8 +147,9 @@ class Taxonomy_Term_Image {
 		}
 
 		// add our data when term is retrieved
-		add_action( 'get_term', array( $this, 'get_term' ), 10, 2 );
-		add_action( 'get_terms', array( $this, 'get_terms' ), 10, 3 );
+		add_filter( 'get_term', array( $this, 'get_term' ), 10, 2 );
+		add_filter( 'get_terms', array( $this, 'get_terms' ) );
+		add_filter( 'get_object_terms', array( $this, 'get_terms' ) );
 	}
 
 	/**
@@ -302,12 +309,12 @@ class Taxonomy_Term_Image {
 	 * Add term_image data to objects when get_terms() is called
 	 *
 	 * @param $terms
-	 * @param $taxonomies
-	 * @param $args
 	 */
-	function get_terms( $terms, $taxonomies, $args ) {
+	function get_terms( $terms ) {
 		foreach( $terms as $i => $term ){
-			$terms[$i] = $this->get_term( $term, $term->taxonomy );
+			if ( is_object( $term ) && isset( $term->taxonomy ) ) {
+				$terms[ $i ] = $this->get_term( $term, $term->taxonomy );
+			}
 		}
 		return $terms;
 	}
