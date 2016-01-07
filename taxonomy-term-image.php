@@ -36,7 +36,7 @@ class Taxonomy_Term_Image {
 	private $term_meta_key = 'term_image';
 
 	/**
-	 * Simple singleton to enforce once instance
+	 * Simple singleton to enforce one instance
 	 *
 	 * @return Taxonomy_Term_Image object
 	 */
@@ -47,6 +47,12 @@ class Taxonomy_Term_Image {
 		}
 		return $object;
 	}
+
+	// prevent cloning
+	private function __clone(){}
+
+	// prevent unserialization
+	private function __wakeup(){}
 
 	/**
 	 * Init the plugin and hook into WordPress
@@ -90,12 +96,6 @@ class Taxonomy_Term_Image {
 		$this->hook_up();
 	}
 
-	// prevent cloning
-	private function __clone(){}
-
-	// prevent unserialization
-	private function __wakeup(){}
-
 	/**
 	 * Check for plugin updates
 	 */
@@ -124,16 +124,20 @@ class Taxonomy_Term_Image {
 	}
 
 	/**
-	 * Initialize the object
-	 * - hook into WordPress admin
+	 * Hook into WordPress
 	 */
 	private function hook_up(){
-		// term meta data registration
-		add_action( 'init', array( $this, 'register_term_meta' ) );
+		// register our term meta and sanitize as an integer
+		register_meta( 'term', $this->term_meta_key, 'absint' );
+
+		// add our data when term is retrieved
+		add_filter( 'get_term', array( $this, 'get_term' ), 10, 2 );
+		add_filter( 'get_terms', array( $this, 'get_terms' ) );
+		add_filter( 'get_object_terms', array( $this, 'get_terms' ) );
 
 		// we only need to add most hooks on the admin side
 		if ( is_admin() ) {
-			add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 
 			foreach ( $this->taxonomies as $taxonomy ) {
 				// add our image field to the taxonomy term forms
@@ -145,24 +149,47 @@ class Taxonomy_Term_Image {
 				add_action( 'edit_' . $taxonomy, array( $this, 'taxonomy_term_form_save' ) );
 			}
 		}
-
-		// add our data when term is retrieved
-		add_filter( 'get_term', array( $this, 'get_term' ), 10, 2 );
-		add_filter( 'get_terms', array( $this, 'get_terms' ) );
-		add_filter( 'get_object_terms', array( $this, 'get_terms' ) );
 	}
 
 	/**
-	 * Register our term meta and sanitize as an integer
+	 * Add the image data to any relevant get_term() call.  Double duty as a
+	 * helper function for this->get_terms().
+	 *
+	 * @param $_term
+	 * @param $taxonomy
+	 * @return object
 	 */
-	function register_term_meta() {
-		register_meta( 'term', $this->term_meta_key, 'absint' );
+	function get_term( $_term, $taxonomy ) {
+		// only modify term when dealing with our taxonomies
+		if ( in_array( $taxonomy, $this->taxonomies ) ) {
+
+			// default to null if not found
+			$image_id = get_term_meta( $_term->term_id, $this->term_meta_key, true );
+			$_term->term_image = !empty( $image_id ) ? $image_id : null;
+		}
+		return $_term;
+	}
+
+	/**
+	 * Add term_image data to objects when get_terms() or wp_get_object_terms()
+	 * is called.
+	 *
+	 * @param $terms
+	 * @return array
+	 */
+	function get_terms( $terms ) {
+		foreach( $terms as $i => $term ){
+			if ( is_object( $term ) && isset( $term->taxonomy ) ) {
+				$terms[ $i ] = $this->get_term( $term, $term->taxonomy );
+			}
+		}
+		return $terms;
 	}
 
 	/**
 	 * WordPress action "admin_enqueue_scripts"
 	 */
-	function action_admin_enqueue_scripts(){
+	function admin_enqueue_scripts(){
 		// get the screen object to decide if we want to inject our scripts
 		$screen = get_current_screen();
 
@@ -172,12 +199,11 @@ class Taxonomy_Term_Image {
 				// WP core stuff we need
 				wp_enqueue_media();
 				wp_enqueue_style( 'thickbox' );
-				$dependencies = array( 'jquery', 'thickbox', 'media-upload' );
 
 				// register our custom script
-				wp_register_script( 'taxonomy-term-image-js', $this->js_dir_url . '/taxonomy-term-image.js', $dependencies, $this->version, true );
+				wp_register_script( 'taxonomy-term-image-js', $this->js_dir_url . '/taxonomy-term-image.js', array( 'jquery', 'thickbox', 'media-upload' ), $this->version, true );
 
-				// Localize the modal window text so that we can translate it
+				// Localize the modal window text so it can be translated
 				wp_localize_script( 'taxonomy-term-image-js', 'TaxonomyTermImageText', $this->labels );
 
 				// enqueue the registered and localized script
@@ -191,11 +217,12 @@ class Taxonomy_Term_Image {
 	 * The HTML form for our taxonomy image field
 	 *
 	 * @param  int    $image_ID  the image ID
-	 * @param  array  $image_src
 	 * @return string the html output for the image form
 	 */
-	function taxonomy_term_image_field( $image_ID = null, $image_src = array() ) {
-		wp_nonce_field('taxonomy-term-image-form-save', 'taxonomy-term-image-save-form-nonce');
+	function taxonomy_term_image_field( $image_ID = null ) {
+		$image_src = ( $image_ID ) ? wp_get_attachment_image_src( $image_ID, 'thumbnail' ) : array();
+
+		wp_nonce_field( 'taxonomy-term-image-form-save', 'taxonomy-term-image-save-form-nonce' );
 		?>
 		<input type="button" class="taxonomy-term-image-attach button" value="<?php echo esc_attr( $this->labels['imageButton'] ); ?>" />
 		<input type="button" class="taxonomy-term-image-remove button" value="<?php echo esc_attr( $this->labels['removeButton'] ); ?>" />
@@ -228,22 +255,11 @@ class Taxonomy_Term_Image {
 	 * @param $term | object | the term object
 	 */
 	function taxonomy_edit_form( $term ){
-		// default values
-		$image_ID = '';
-		$image_src = array();
-
-		$term_image_id = get_term_meta( $term->term_id, $this->term_meta_key, true );
-
-		// look for existing data for this term
-		if ( isset( $term_image_id ) ) {
-			$image_ID  = $term_image_id;
-			$image_src = wp_get_attachment_image_src( $image_ID, 'thumbnail' );
-		}
 		?>
 		<tr class="form-field">
 			<th scope="row" valign="top"><label><?php echo $this->labels['fieldTitle']; ?></label></th>
 			<td class="taxonomy-term-image-row">
-				<?php $this->taxonomy_term_image_field( $image_ID, $image_src ); ?>
+				<?php $this->taxonomy_term_image_field( $term->term_image ); ?>
 			</td>
 		</tr>
 		<?php
@@ -255,7 +271,6 @@ class Taxonomy_Term_Image {
 	 * @param $term_id
 	 */
 	function taxonomy_term_form_save( $term_id ) {
-
 		// our requirements for saving:
 		if (
 			// nonce was submitted and is verified
@@ -272,51 +287,19 @@ class Taxonomy_Term_Image {
 		{
 			// get the term_meta and assign it the old_image
 			$old_image = get_term_meta( $term_id, $this->term_meta_key, true );
-			// see if image data was submitted:
-			// sanitize the data and save it as the new_image
-			$new_image = isset( $_POST['taxonomy_term_image'] ) ? absint( $_POST['taxonomy_term_image'] ) : '';
 
+			// sanitize the data and save it as the new_image
+			$new_image = absint( $_POST['taxonomy_term_image'] );
+
+			// if an image was removed, delete the meta data
 			if ( $old_image && '' === $new_image ) {
 				delete_term_meta( $term_id, $this->term_meta_key );
 			}
 			// if the new image is not the same as the old update the term_meta
 			else if ( $old_image !== $new_image ) {
-				// save the term image data
 				update_term_meta( $term_id, $this->term_meta_key, $new_image );
 			}
 		}
-	}
-
-	/**
-	 * Add the image data to any relevant get_term call
-	 *
-	 * @param $_term
-	 * @param $taxonomy
-	 *
-	 * @return mixed
-	 */
-	function get_term( $_term, $taxonomy ) {
-		// only modify term when dealing with this taxonomy
-		if ( in_array( $taxonomy, $this->taxonomies ) ) {
-			// (backwards compatibility) default to null if not found
-			$image_id = get_term_meta( $_term->term_id, $this->term_meta_key, true );
-			$_term->term_image = !empty( $image_id ) ? $image_id : null;
-		}
-		return $_term;
-	}
-
-	/**
-	 * Add term_image data to objects when get_terms() is called
-	 *
-	 * @param $terms
-	 */
-	function get_terms( $terms ) {
-		foreach( $terms as $i => $term ){
-			if ( is_object( $term ) && isset( $term->taxonomy ) ) {
-				$terms[ $i ] = $this->get_term( $term, $term->taxonomy );
-			}
-		}
-		return $terms;
 	}
 }
 
