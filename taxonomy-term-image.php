@@ -292,5 +292,6 @@ class Taxonomy_Term_Image {
 
 endif;
 
-
-Taxonomy_Term_Image::instance();
+add_action( 'init', function(){
+	Taxonomy_Term_Image::instance();
+} );
