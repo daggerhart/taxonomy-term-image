@@ -305,7 +305,11 @@ class Taxonomy_Term_Image {
 
 endif;
 
-add_action( 'init', function(){
+/**
+ * Initialize the plugin by calling for its instance on WordPress action 'init'
+ */
+function taxonomy_term_image_init() {
 	Taxonomy_Term_Image::instance();
-});
+}
+add_action( 'init', 'taxonomy_term_image_init' );
 
