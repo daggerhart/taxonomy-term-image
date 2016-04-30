@@ -255,6 +255,10 @@ class Taxonomy_Term_Image {
 	 * @param $term | object | the term object
 	 */
 	function taxonomy_edit_form( $term ){
+		// ensure we have our term_image data
+		if ( !isset( $term->term_image ) ){
+			$term = $this->get_term( $term, $term->taxonomy );
+		}
 		?>
 		<tr class="form-field">
 			<th scope="row" valign="top"><label><?php echo $this->labels['fieldTitle']; ?></label></th>
