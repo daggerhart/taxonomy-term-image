@@ -184,7 +184,7 @@ class Taxonomy_Term_Image {
 			$term = get_term( $term_id );
 
 			if ( $term->term_image ) {
-				echo wp_get_attachment_image( $term->term_image, 'thumbnail', false, array( 'style' => 'max-width:100%; height:auto;' ) );
+				$content = wp_get_attachment_image( $term->term_image, 'thumbnail', false, array( 'style' => 'max-width:100%; height:auto;' ) );
 			}
 		}
 		return $content;
