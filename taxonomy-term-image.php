@@ -66,6 +66,7 @@ class Taxonomy_Term_Image {
 			'removeButton'     => __( 'Remove' ),
 			'modalTitle'       => __( 'Select or upload an image for this term' ),
 			'modalButton'      => __( 'Attach' ),
+			'adminColumnTitle' => __( 'Image' ),
 		);
 
 		// allow overriding of the html text
@@ -147,9 +148,48 @@ class Taxonomy_Term_Image {
 				// hook into term administration actions
 				add_action( 'create_' . $taxonomy, array( $this, 'taxonomy_term_form_save' ) );
 				add_action( 'edit_' . $taxonomy, array( $this, 'taxonomy_term_form_save' ) );
+
+				// custom admin taxonomy term list columns
+				add_filter( 'manage_edit-' . $taxonomy . '_columns',  array( $this, 'taxonomy_term_column_image' ) );
+				add_filter( 'manage_' . $taxonomy . '_custom_column', array( $this, 'taxonomy_term_column_image_content' ), 10, 3 );
 			}
 		}
 	}
+
+	/**
+	 * Add a new column to enabled taxonomy admin pages that show the chosen
+	 * image.
+	 *
+	 * @param $columns
+	 *
+	 * @return mixed
+	 */
+	function taxonomy_term_column_image( $columns ){
+		$columns['term_image'] = $this->labels['adminColumnTitle'];
+
+		return $columns;
+	}
+
+	/**
+	 * Show the selected term image within the newly created admin column
+	 *
+	 * @param $content
+	 * @param $column_name
+	 * @param $term_id
+	 *
+	 * @return mixed
+	 */
+	function taxonomy_term_column_image_content( $content, $column_name, $term_id ){
+		if ( 'term_image' == $column_name ){
+			$term = get_term( $term_id );
+
+			if ( $term->term_image ) {
+				echo wp_get_attachment_image( $term->term_image, 'thumbnail', false, array( 'style' => 'max-width:100%; height:auto;' ) );
+			}
+		}
+		return $content;
+	}
+
 
 	/**
 	 * Add the image data to any relevant get_term() call.  Double duty as a
