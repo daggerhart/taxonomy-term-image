@@ -4,7 +4,7 @@ Plugin Name: Taxonomy Term Image
 Plugin URI: https://github.com/daggerhart/taxonomy-term-image
 Description: Example plugin for adding an image upload field to a taxonomy term edit page using WordPress 4.4 taxonomy term meta data
 Author: daggerhart, slack
-Version: 2.0.2
+Version: 2.0.3
 */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -14,7 +14,7 @@ if ( ! class_exists( 'Taxonomy_Term_Image' ) ) :
 class Taxonomy_Term_Image {
 
 	// object version used for enqueuing scripts
-	private $version = '2.0.2';
+	private $version = '2.0.3';
 
 	// url for the directory where our js is located
 	private $js_dir_url;
