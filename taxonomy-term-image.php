@@ -132,7 +132,7 @@ class Taxonomy_Term_Image {
 		register_meta( 'term', $this->term_meta_key, 'absint' );
 
 		// add our data when term is retrieved
-		add_filter( 'get_term', array( $this, 'get_term' ), 10, 2 );
+		add_filter( 'get_term', array( $this, 'get_term' ) );
 		add_filter( 'get_terms', array( $this, 'get_terms' ) );
 		add_filter( 'get_object_terms', array( $this, 'get_terms' ) );
 
@@ -196,12 +196,11 @@ class Taxonomy_Term_Image {
 	 * helper function for this->get_terms().
 	 *
 	 * @param $_term
-	 * @param $taxonomy
 	 * @return object
 	 */
-	function get_term( $_term, $taxonomy ) {
+	function get_term( $_term ) {
 		// only modify term when dealing with our taxonomies
-		if ( in_array( $taxonomy, $this->taxonomies ) ) {
+		if ( is_object( $_term ) && in_array( $_term->taxonomy, $this->taxonomies ) ) {
 
 			// default to null if not found
 			$image_id = get_term_meta( $_term->term_id, $this->term_meta_key, true );
@@ -219,8 +218,8 @@ class Taxonomy_Term_Image {
 	 */
 	function get_terms( $terms ) {
 		foreach( $terms as $i => $term ){
-			if ( is_object( $term ) && isset( $term->taxonomy ) ) {
-				$terms[ $i ] = $this->get_term( $term, $term->taxonomy );
+			if ( is_object( $term ) && !empty( $term->taxonomy ) ) {
+				$terms[ $i ] = $this->get_term( $term );
 			}
 		}
 		return $terms;
