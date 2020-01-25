@@ -83,15 +83,20 @@
       // the selected image
       var image = attachment.toJSON();
 
-      // get image sizes data
+      // retrieve image url.
+      // no bitmap image like svg does not have "sizes" attribute.
+      var url ;
       var sizes = attachment.get('sizes');
-      var size = ( typeof sizes.thumbnail === 'undefined' ) ? sizes.full : sizes.thumbnail;
+      if( typeof sizes !== 'undefined' )
+    	  url = ( typeof sizes.thumbnail === 'undefined' ) ? sizes.full.url : sizes.thumbnail.url ;
+      else
+    	  url = attachment.get('url');
 
       //image.id
       $('#taxonomy-term-image-id').val( image.id );
 
       //sizes.thumbnail.url
-      $('#taxonomy-term-image-container').html("<img class='taxonomy-term-image-attach' src='" + size.url + "' />");
+      $('#taxonomy-term-image-container').html("<img class='taxonomy-term-image-attach' src='" + url + "' />");
     }
   };
 
